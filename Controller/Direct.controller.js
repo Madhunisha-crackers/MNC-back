@@ -20,7 +20,7 @@ const PHONE_NUMBER_ID = '660922473779560';
 const generatePDF = (type, data, customerDetails, products, dbValues) => {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ margin: 50 });
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
       const safeCustomerName = (customerDetails.customer_name || 'unknown').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
       const pdfDir = path.join(__dirname, '../pdf_data');
       if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir, { recursive: true });
@@ -32,9 +32,9 @@ const generatePDF = (type, data, customerDetails, products, dbValues) => {
       doc.fontSize(20).font('Helvetica-Bold').text(type === 'quotation' ? 'Quotation' : 'Estimate Bill', 50, 50, { align: 'center' });
       doc.fontSize(12).font('Helvetica')
         .text('Madhu Nisha Crackers', 50, 80)
-        .text('Sivakasi', 50, 100)
-        .text('Mobile: +91 94875 24689', 50, 115)
-        .text('Email: madhunishacrackers@gmail.com', 50, 130)
+        .text('Sivakasi', 50, 95)
+        .text('Mobile: +91 94875 24689', 50, 110)
+        .text('Email: madhunishacrackers@gmail.com', 50, 125);
 
       // Customer Details
       const customerType = data.customer_type === 'Customer of Selected Agent' ? 'Customer - Agent' : data.customer_type || 'User';
@@ -46,31 +46,36 @@ const generatePDF = (type, data, customerDetails, products, dbValues) => {
         addressLine1 = addressLine1.slice(0, splitIndex);
       }
       doc.fontSize(12).font('Helvetica')
-        .text(`${type === 'quotation' ? 'Quotation ID' : 'Order ID'}: ${data.quotation_id || data.order_id}`, 350, 80, { align: 'left' })
-        .text(`Date: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 350, 95, { align: 'left' })
-        .text(`Customer: ${customerDetails.customer_name || 'N/A'}`, 350, 110, { align: 'left' })
-        .text(`Contact: ${customerDetails.mobile_number || 'N/A'}`, 350, 125, { align: 'left' })
-        .text(`Address: ${addressLine1}`, 350, 140, { align: 'left' })
-        .text(addressLine2, 350, 155, { align: 'left' })
-        .text(`District: ${customerDetails.district || 'N/A'}`, 350, 170, { align: 'left' })
-        .text(`State: ${customerDetails.state || 'N/A'}`, 350, 185, { align: 'left' })
-        .text(`Customer Type: ${customerType}`, 350, 200, { align: 'left' });
-      if (data.agent_name) {
-        doc.text(`Agent: ${data.agent_name}`, 350, 215, { align: 'left' });
-      }
+        .text(`${type === 'quotation' ? 'Quotation ID' : 'Order ID'}: ${data.quotation_id || data.order_id}`, 280, 80, { align: 'left' })
+        .text(`Date: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 280, 95, { align: 'left' })
+        .text(`Customer: ${customerDetails.customer_name || 'N/A'}`, 280, 110, { align: 'left' })
+        .text(`Contact: ${customerDetails.mobile_number || 'N/A'}`, 280, 125, { align: 'left' })
+        .text(`Address: ${addressLine1}`, 280, 140, { align: 'left' })
+        .text(addressLine2, 280, 165, { align: 'left' })
+        .text(addressLine2, 280, 175, { align: 'left' })
+        .text(`District: ${customerDetails.district || 'N/A'}`, 280, 190, { align: 'left' })
+        .text(`State: ${customerDetails.state || 'N/A'}`, 280, 200, { align: 'left' })
+        .text(`Customer Type: ${customerType}`, 280, 220, { align: 'left' });
+        if (data.agent_name) {
+          doc.text(`Agent: ${data.agent_name}`, 280, 250, { align: 'left' });
+        }
+
+      // Table Setup
+      const tableY = 300;
+      const tableWidth = 500;
+      const colWidths = [50, 150, 100, 100, 100]; // Adjusted for better product name display
+      const colX = [50, 100, 250, 350, 450];
+      const rowHeight = 25;
+      const pageHeight = doc.page.height - doc.page.margins.bottom;
 
       // Table Header
-      const tableY = 250;
-      const tableWidth = 500;
-      const colWidths = [50, 150, 100, 100, 100];
-      const colX = [50, 100, 250, 350, 450];
       doc.moveTo(50, tableY - 5).lineTo(50 + tableWidth, tableY - 5).stroke();
       doc.fontSize(10).font('Helvetica-Bold')
         .text('Sl.No', colX[0] + 5, tableY, { width: colWidths[0] - 10, align: 'center' })
-        .text('Product', colX[1] + 5, tableY)
-        .text('Quantity', colX[2] + 5, tableY)
-        .text('Price', colX[3] + 5, tableY)
-        .text('Total', colX[4] + 5, tableY);
+        .text('Product', colX[1] + 5, tableY, { width: colWidths[1] - 10, align: 'left' })
+        .text('Quantity', colX[2] + 5, tableY, { width: colWidths[2] - 10, align: 'center' })
+        .text('Price', colX[3] + 5, tableY, { width: colWidths[3] - 10, align: 'right' })
+        .text('Total', colX[4] + 5, tableY, { width: colWidths[4] - 10, align: 'right' });
       doc.moveTo(50, tableY + 15).lineTo(50 + tableWidth, tableY + 15).stroke();
       colX.forEach((x, i) => {
         doc.moveTo(x, tableY - 5).lineTo(x, tableY + 15).stroke();
@@ -80,17 +85,50 @@ const generatePDF = (type, data, customerDetails, products, dbValues) => {
       });
 
       // Table Rows
-      let y = tableY + 25;
+      let y = tableY + rowHeight;
       products.forEach((product, index) => {
+        // Check for page overflow
+        if (y + rowHeight > pageHeight - 50) {
+          doc.addPage();
+          y = doc.page.margins.top + 20;
+          // Redraw table header on new page
+          doc.moveTo(50, y - 5).lineTo(50 + tableWidth, y - 5).stroke();
+          doc.fontSize(10).font('Helvetica-Bold')
+            .text('Sl.No', colX[0] + 5, y, { width: colWidths[0] - 10, align: 'center' })
+            .text('Product', colX[1] + 5, y, { width: colWidths[1] - 10, align: 'left' })
+            .text('Quantity', colX[2] + 5, y, { width: colWidths[2] - 10, align: 'center' })
+            .text('Price', colX[3] + 5, y, { width: colWidths[3] - 10, align: 'right' })
+            .text('Total', colX[4] + 5, y, { width: colWidths[4] - 10, align: 'right' });
+          doc.moveTo(50, y + 15).lineTo(50 + tableWidth, y + 15).stroke();
+          colX.forEach((x, i) => {
+            doc.moveTo(x, y - 5).lineTo(x, y + 15).stroke();
+            if (i === colX.length - 1) {
+              doc.moveTo(x + colWidths[i], y - 5).lineTo(x + colWidths[i], y + 15).stroke();
+            }
+          });
+          y += rowHeight;
+        }
+
+        // Calculate product total
         const price = parseFloat(product.price) || 0;
         const discount = parseFloat(product.discount || 0) || 0;
         const productTotal = (price - (price * discount / 100)) * (product.quantity || 1);
+
+        // Truncate long product names
+        let productName = product.productname || 'N/A';
+        if (productName.length > 30) {
+          productName = productName.substring(0, 27) + '...';
+        }
+
+        // Draw row content
         doc.font('Helvetica')
           .text(index + 1, colX[0] + 5, y, { width: colWidths[0] - 10, align: 'center' })
-          .text(product.productname || 'N/A', colX[1] + 5, y, { width: colWidths[1] - 10, align: 'left' })
-          .text(product.quantity || 1, colX[2] + 5, y, { width: colWidths[2] - 10, align: 'left' })
-          .text(`Rs.${price.toFixed(2)}`, colX[3] + 5, y, { width: colWidths[3] - 10, align: 'left' })
-          .text(`Rs.${productTotal.toFixed(2)}`, colX[4] + 5, y, { width: colWidths[4] - 10, align: 'left' });
+          .text(productName, colX[1] + 5, y, { width: colWidths[1] - 10, align: 'left' })
+          .text(product.quantity || 1, colX[2] + 5, y, { width: colWidths[2] - 10, align: 'center' })
+          .text(`Rs.${price.toFixed(2)}`, colX[3] + 5, y, { width: colWidths[3] - 10, align: 'right' })
+          .text(`Rs.${productTotal.toFixed(2)}`, colX[4] + 5, y, { width: colWidths[4] - 10, align: 'right' });
+
+        // Draw row lines
         doc.moveTo(50, y + 15).lineTo(50 + tableWidth, y + 15).stroke();
         colX.forEach((x, i) => {
           doc.moveTo(x, y - 5).lineTo(x, y + 15).stroke();
@@ -98,27 +136,34 @@ const generatePDF = (type, data, customerDetails, products, dbValues) => {
             doc.moveTo(x + colWidths[i], y - 5).lineTo(x + colWidths[i], y + 15).stroke();
           }
         });
-        y += 20;
+
+        y += rowHeight;
       });
 
       // Totals Section
-      y += 10;
-      y += 20;
+      y += 10; // Space after table
+      if (y + 90 > pageHeight - 50) { // Check if totals fit on current page
+        doc.addPage();
+        y = doc.page.margins.top + 20;
+      }
+
       const netRate = parseFloat(dbValues.net_rate) || 0;
       const youSave = parseFloat(dbValues.you_save) || 0;
       const total = parseFloat(dbValues.total) || 0;
-      
-      doc.font('Helvetica-Bold')
-        .text(`Net Rate: Rs.${netRate.toFixed(2)}`, 450, y, { align: 'right' });
+
+      doc.fontSize(10).font('Helvetica-Bold')
+        .text(`Net Rate: Rs.${netRate.toFixed(2)}`, 350, y, { width: 150, align: 'right' });
       y += 20;
-      doc.font('Helvetica-Bold')
-        .text(`You Save: Rs.${youSave.toFixed(2)}`, 450, y, { align: 'right' });
+      doc.text(`You Save: Rs.${youSave.toFixed(2)}`, 350, y, { width: 150, align: 'right' });
       y += 20;
-      doc.font('Helvetica-Bold')
-        .text(`Total: Rs.${total.toFixed(2)}`, 450, y, { align: 'right' });
+      doc.text(`Total: Rs.${total.toFixed(2)}`, 350, y, { width: 150, align: 'right' });
 
       // Footer
       y += 30;
+      if (y + 50 > pageHeight - 50) {
+        doc.addPage();
+        y = doc.page.margins.top + 20;
+      }
       doc.fontSize(10).font('Helvetica')
         .text('Thank you for your business!', 50, y, { align: 'center' })
         .text('For any queries, contact us at +91 63836 59214', 50, y + 15, { align: 'center' });
@@ -229,7 +274,7 @@ async function sendBookingEmail(toEmail, bookingData, customerDetails, pdfPath, 
     ).join('\n');
 
     const mailOptions = {
-      from: '"Phoenix Crackers" <madhunishapyrotechsivakasi@gmail.com>',
+      from: '"Madhu Nisha Crackers" <madhunishapyrotechsivakasi@gmail.com>',
       to: toEmail,
       subject: `New ${type === 'quotation' ? 'Quotation' : 'Booking'}: ${bookingData.quotation_id || bookingData.order_id}`,
       text: `
@@ -238,7 +283,6 @@ A new ${type} has been made.
 Customer Name: ${customerDetails.customer_name || 'N/A'}
 Mobile: ${customerDetails.mobile_number || 'N/A'}
 Email: ${customerDetails.email || 'N/A'}
-Address: ${customerDetails.address || 'N/A'}
 District: ${customerDetails.district || 'N/A'}
 State: ${customerDetails.state || 'N/A'}
 ${type === 'quotation' ? 'Quotation ID' : 'Order ID'}: ${bookingData.quotation_id || bookingData.order_id}
@@ -759,8 +803,8 @@ exports.createBooking = async (req, res) => {
       customer_type, customer_name, address, mobile_number, email, district, state
     } = req.body;
 
+    // Validate required fields
     if (!order_id || !/^[a-zA-Z0-9-_]+$/.test(order_id)) return res.status(400).json({ message: 'Invalid or missing Order ID' });
-    if (!quotation_id || !/^[a-zA-Z0-9-_]+$/.test(quotation_id)) return res.status(400).json({ message: 'Invalid or missing Quotation ID' });
     if (!Array.isArray(products) || products.length === 0) return res.status(400).json({ message: 'Products array is required and must not be empty' });
     if (!total || isNaN(parseFloat(total)) || parseFloat(total) <= 0) return res.status(400).json({ message: 'Total must be a positive number' });
 
@@ -772,19 +816,23 @@ exports.createBooking = async (req, res) => {
     if ([parsedNetRate, parsedYouSave, parsedPromoDiscount, parsedTotal].some(v => isNaN(v)))
       return res.status(400).json({ message: 'net_rate, you_save, promo_discount, and total must be valid numbers' });
 
-    console.log(`Checking quotation with ID: ${quotation_id}`);
-    const quotationCheck = await pool.query(
-      'SELECT customer_id, customer_type, products, net_rate, you_save, total, promo_discount FROM public.quotations WHERE quotation_id = $1',
-      [quotation_id]
-    );
-    if (quotationCheck.rows.length === 0) {
-      console.error(`Quotation not found for ID: ${quotation_id}`);
-      return res.status(404).json({ message: 'Quotation not found' });
+    // Check quotation_id only if provided
+    let quotation = null;
+    if (quotation_id) {
+      console.log(`Checking quotation with ID: ${quotation_id}`);
+      const quotationCheck = await pool.query(
+        'SELECT customer_id, customer_type, products, net_rate, you_save, total, promo_discount FROM public.quotations WHERE quotation_id = $1',
+        [quotation_id]
+      );
+      if (quotationCheck.rows.length === 0) {
+        console.error(`Quotation not found for ID: ${quotation_id}`);
+        return res.status(404).json({ message: 'Quotation not found' });
+      }
+      quotation = quotationCheck.rows[0];
+      console.log(`Quotation found: ${quotation_id}, customer_type: ${quotation.customer_type}`);
     }
 
-    const quotation = quotationCheck.rows[0];
-    console.log(`Quotation found: ${quotation_id}, customer_type: ${quotation.customer_type}`);
-    let finalCustomerType = customer_type || quotation.customer_type || 'User';
+    let finalCustomerType = customer_type || (quotation ? quotation.customer_type : 'User');
     let customerDetails = { customer_name, address, mobile_number, email, district, state };
     let agent_name = null;
 
@@ -845,7 +893,7 @@ exports.createBooking = async (req, res) => {
     `, [
       customer_id || null,
       order_id,
-      quotation_id,
+      quotation_id || null, // Store null if quotation_id is not provided
       JSON.stringify(products),
       parsedNetRate,
       parsedYouSave,
@@ -862,7 +910,10 @@ exports.createBooking = async (req, res) => {
       pdfPath
     ]);
 
-    await pool.query('UPDATE public.quotations SET status = $1, updated_at = NOW() WHERE quotation_id = $2', ['booked', quotation_id]);
+    // Update quotation status only if quotation_id exists
+    if (quotation_id) {
+      await pool.query('UPDATE public.quotations SET status = $1, updated_at = NOW() WHERE quotation_id = $2', ['booked', quotation_id]);
+    }
 
     try {
       const mediaId = await uploadPDF(pdfPath);
@@ -888,7 +939,7 @@ exports.createBooking = async (req, res) => {
 
     await pool.query('COMMIT');
 
-    console.log(`Booking created successfully for order_id: ${order_id}, quotation_id: ${quotation_id}`);
+    console.log(`Booking created successfully for order_id: ${order_id}, quotation_id: ${quotation_id || 'null'}`);
     res.status(201).json({
       message: 'Booking created successfully',
       id: result.rows[0].id,
@@ -899,7 +950,7 @@ exports.createBooking = async (req, res) => {
     });
   } catch (err) {
     await pool.query('ROLLBACK');
-    console.error(`Failed to create booking for quotation_id ${req.body.quotation_id}:`, err.message);
+    console.error(`Failed to create booking for order_id ${req.body.order_id}:`, err.message);
     res.status(500).json({ message: 'Failed to create booking', error: err.message });
   }
 };

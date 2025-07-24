@@ -16,6 +16,7 @@ app.use('/api/tracking', require('./Router/Tracking.router'));
 app.use('/api', require('./Router/Banner.router'));
 app.use('/api', require('./Router/Promocode.router'));
 app.use('/api/send-wholesale-enquiry', require('./Router/sendWholesaleEnquiry'));
+app.use('/api', require('./Router/SalesAnalysis.router'));
 app.use((err, req, res, next) => {
   console.error('🔥 Error:', err.stack || err);
   res.status(500).json({
