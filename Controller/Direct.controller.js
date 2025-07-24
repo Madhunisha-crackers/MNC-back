@@ -45,25 +45,39 @@ const generatePDF = (type, data, customerDetails, products, dbValues) => {
         addressLine2 = addressLine1.slice(splitIndex + 1);
         addressLine1 = addressLine1.slice(0, splitIndex);
       }
+
+      let y = 80; // Starting Y-coordinate for customer details
+      const lineHeight = 15; // Standard line height for consistent spacing
+
       doc.fontSize(12).font('Helvetica')
-        .text(`${type === 'quotation' ? 'Quotation ID' : 'Order ID'}: ${data.quotation_id || data.order_id}`, 280, 80, { align: 'left' })
-        .text(`Date: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 280, 95, { align: 'left' })
-        .text(`Customer: ${customerDetails.customer_name || 'N/A'}`, 280, 110, { align: 'left' })
-        .text(`Contact: ${customerDetails.mobile_number || 'N/A'}`, 280, 125, { align: 'left' })
-        .text(`Address: ${addressLine1}`, 280, 140, { align: 'left' })
-        .text(addressLine2, 280, 165, { align: 'left' })
-        .text(addressLine2, 280, 175, { align: 'left' })
-        .text(`District: ${customerDetails.district || 'N/A'}`, 280, 190, { align: 'left' })
-        .text(`State: ${customerDetails.state || 'N/A'}`, 280, 200, { align: 'left' })
-        .text(`Customer Type: ${customerType}`, 280, 220, { align: 'left' });
-        if (data.agent_name) {
-          doc.text(`Agent: ${data.agent_name}`, 280, 250, { align: 'left' });
-        }
+        .text(`${type === 'quotation' ? 'Quotation ID' : 'Order ID'}: ${data.quotation_id || data.order_id}`, 280, y, { align: 'left' });
+      y += lineHeight;
+      doc.text(`Date: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 280, y, { align: 'left' });
+      y += lineHeight;
+      doc.text(`Customer: ${customerDetails.customer_name || 'N/A'}`, 280, y, { align: 'left' });
+      y += lineHeight;
+      doc.text(`Contact: ${customerDetails.mobile_number || 'N/A'}`, 280, y, { align: 'left' });
+      y += lineHeight;
+      doc.text(`Address: ${addressLine1}`, 280, y, { align: 'left' });
+      if (addressLine2) {
+        y += lineHeight;
+        doc.text(addressLine2, 280, y, { align: 'left' });
+      }
+      y += lineHeight;
+      doc.text(`District: ${customerDetails.district || 'N/A'}`, 280, y, { align: 'left' });
+      y += lineHeight;
+      doc.text(`State: ${customerDetails.state || 'N/A'}`, 280, y, { align: 'left' });
+      y += lineHeight;
+      doc.text(`Customer Type: ${customerType}`, 280, y, { align: 'left' });
+      if (data.agent_name) {
+        y += lineHeight;
+        doc.text(`Agent: ${data.agent_name}`, 280, y, { align: 'left' });
+      }
 
       // Table Setup
-      const tableY = 300;
+      const tableY = y + 30; // Adjust table start based on dynamic y
       const tableWidth = 500;
-      const colWidths = [50, 150, 100, 100, 100]; // Adjusted for better product name display
+      const colWidths = [50, 150, 100, 100, 100];
       const colX = [50, 100, 250, 350, 450];
       const rowHeight = 25;
       const pageHeight = doc.page.height - doc.page.margins.bottom;
@@ -85,88 +99,85 @@ const generatePDF = (type, data, customerDetails, products, dbValues) => {
       });
 
       // Table Rows
-      let y = tableY + rowHeight;
+      let tableRowY = tableY + rowHeight;
       products.forEach((product, index) => {
-        // Check for page overflow
-        if (y + rowHeight > pageHeight - 50) {
+        if (tableRowY + rowHeight > pageHeight - 50) {
           doc.addPage();
-          y = doc.page.margins.top + 20;
-          // Redraw table header on new page
-          doc.moveTo(50, y - 5).lineTo(50 + tableWidth, y - 5).stroke();
+          tableRowY = doc.page.margins.top + 20;
+          doc.moveTo(50, tableRowY - 5).lineTo(50 + tableWidth, tableRowY - 5).stroke();
           doc.fontSize(10).font('Helvetica-Bold')
-            .text('Sl.No', colX[0] + 5, y, { width: colWidths[0] - 10, align: 'center' })
-            .text('Product', colX[1] + 5, y, { width: colWidths[1] - 10, align: 'left' })
-            .text('Quantity', colX[2] + 5, y, { width: colWidths[2] - 10, align: 'center' })
-            .text('Price', colX[3] + 5, y, { width: colWidths[3] - 10, align: 'right' })
-            .text('Total', colX[4] + 5, y, { width: colWidths[4] - 10, align: 'right' });
-          doc.moveTo(50, y + 15).lineTo(50 + tableWidth, y + 15).stroke();
+            .text('Sl.No', colX[0] + 5, tableRowY, { width: colWidths[0] - 10, align: 'center' })
+            .text('Product', colX[1] + 5, tableRowY, { width: colWidths[1] - 10, align: 'left' })
+            .text('Quantity', colX[2] + 5, tableRowY, { width: colWidths[2] - 10, align: 'center' })
+            .text('Price', colX[3] + 5, tableRowY, { width: colWidths[3] - 10, align: 'right' })
+            .text('Total', colX[4] + 5, tableRowY, { width: colWidths[4] - 10, align: 'right' });
+          doc.moveTo(50, tableRowY + 15).lineTo(50 + tableWidth, tableRowY + 15).stroke();
           colX.forEach((x, i) => {
-            doc.moveTo(x, y - 5).lineTo(x, y + 15).stroke();
+            doc.moveTo(x, tableRowY - 5).lineTo(x, tableRowY + 15).stroke();
             if (i === colX.length - 1) {
-              doc.moveTo(x + colWidths[i], y - 5).lineTo(x + colWidths[i], y + 15).stroke();
+              doc.moveTo(x + colWidths[i], tableRowY - 5).lineTo(x + colWidths[i], tableRowY + 15).stroke();
             }
           });
-          y += rowHeight;
+          tableRowY += rowHeight;
         }
 
-        // Calculate product total
         const price = parseFloat(product.price) || 0;
         const discount = parseFloat(product.discount || 0) || 0;
         const productTotal = (price - (price * discount / 100)) * (product.quantity || 1);
 
-        // Truncate long product names
         let productName = product.productname || 'N/A';
         if (productName.length > 30) {
           productName = productName.substring(0, 27) + '...';
         }
 
-        // Draw row content
         doc.font('Helvetica')
-          .text(index + 1, colX[0] + 5, y, { width: colWidths[0] - 10, align: 'center' })
-          .text(productName, colX[1] + 5, y, { width: colWidths[1] - 10, align: 'left' })
-          .text(product.quantity || 1, colX[2] + 5, y, { width: colWidths[2] - 10, align: 'center' })
-          .text(`Rs.${price.toFixed(2)}`, colX[3] + 5, y, { width: colWidths[3] - 10, align: 'right' })
-          .text(`Rs.${productTotal.toFixed(2)}`, colX[4] + 5, y, { width: colWidths[4] - 10, align: 'right' });
+          .text(index + 1, colX[0] + 5, tableRowY, { width: colWidths[0] - 10, align: 'center' })
+          .text(productName, colX[1] + 5, tableRowY, { width: colWidths[1] - 10, align: 'left' })
+          .text(product.quantity || 1, colX[2] + 5, tableRowY, { width: colWidths[2] - 10, align: 'center' })
+          .text(`Rs.${price.toFixed(2)}`, colX[3] + 5, tableRowY, { width: colWidths[3] - 10, align: 'right' })
+          .text(`Rs.${productTotal.toFixed(2)}`, colX[4] + 5, tableRowY, { width: colWidths[4] - 10, align: 'right' });
 
-        // Draw row lines
-        doc.moveTo(50, y + 15).lineTo(50 + tableWidth, y + 15).stroke();
+        doc.moveTo(50, tableRowY + 15).lineTo(50 + tableWidth, tableRowY + 15).stroke();
         colX.forEach((x, i) => {
-          doc.moveTo(x, y - 5).lineTo(x, y + 15).stroke();
+          doc.moveTo(x, tableRowY - 5).lineTo(x, tableRowY + 15).stroke();
           if (i === colX.length - 1) {
-            doc.moveTo(x + colWidths[i], y - 5).lineTo(x + colWidths[i], y + 15).stroke();
+            doc.moveTo(x + colWidths[i], tableRowY - 5).lineTo(x + colWidths[i], tableRowY + 15).stroke();
           }
         });
 
-        y += rowHeight;
+        tableRowY += rowHeight;
       });
 
       // Totals Section
-      y += 10; // Space after table
-      if (y + 90 > pageHeight - 50) { // Check if totals fit on current page
+      tableRowY += 10;
+      if (tableRowY + 110 > pageHeight - 50) {
         doc.addPage();
-        y = doc.page.margins.top + 20;
+        tableRowY = doc.page.margins.top + 20;
       }
 
       const netRate = parseFloat(dbValues.net_rate) || 0;
       const youSave = parseFloat(dbValues.you_save) || 0;
+      const processingFee = parseFloat(dbValues.processing_fee) || ((netRate - youSave) * 0.03);
       const total = parseFloat(dbValues.total) || 0;
 
       doc.fontSize(10).font('Helvetica-Bold')
-        .text(`Net Rate: Rs.${netRate.toFixed(2)}`, 350, y, { width: 150, align: 'right' });
-      y += 20;
-      doc.text(`You Save: Rs.${youSave.toFixed(2)}`, 350, y, { width: 150, align: 'right' });
-      y += 20;
-      doc.text(`Total: Rs.${total.toFixed(2)}`, 350, y, { width: 150, align: 'right' });
+        .text(`Net Rate: Rs.${netRate.toFixed(2)}`, 400, tableRowY, { width: 150, align: 'right' });
+      tableRowY += 20;
+      doc.text(`Discount: Rs.${youSave.toFixed(2)}`, 400, tableRowY, { width: 150, align: 'right' });
+      tableRowY += 20;
+      doc.text(`Processing Fee: Rs.${processingFee.toFixed(2)}`, 400, tableRowY, { width: 150, align: 'right' });
+      tableRowY += 20;
+      doc.text(`Total: Rs.${total.toFixed(2)}`, 400, tableRowY, { width: 150, align: 'right' });
 
       // Footer
-      y += 30;
-      if (y + 50 > pageHeight - 50) {
+      tableRowY += 30;
+      if (tableRowY + 50 > pageHeight - 50) {
         doc.addPage();
-        y = doc.page.margins.top + 20;
+        tableRowY = doc.page.margins.top + 20;
       }
       doc.fontSize(10).font('Helvetica')
-        .text('Thank you for your business!', 50, y, { align: 'center' })
-        .text('For any queries, contact us at +91 63836 59214', 50, y + 15, { align: 'center' });
+        .text('Thank you for your business!', 50, tableRowY, { align: 'center' })
+        .text('For any queries, contact us at +91 63836 59214', 50, tableRowY + 15, { align: 'center' });
 
       doc.end();
       stream.on('finish', () => {
@@ -388,7 +399,7 @@ exports.getAllQuotations = async (req, res) => {
 exports.createQuotation = async (req, res) => {
   try {
     const {
-      customer_id, quotation_id, products, net_rate, you_save, total, promo_discount,
+      customer_id, quotation_id, products, net_rate, you_save, processing_fee, total, promo_discount,
       customer_type, customer_name, address, mobile_number, email, district, state
     } = req.body;
 
@@ -398,11 +409,12 @@ exports.createQuotation = async (req, res) => {
 
     const parsedNetRate = parseFloat(net_rate) || 0;
     const parsedYouSave = parseFloat(you_save) || 0;
+    const parsedProcessingFee = parseFloat(processing_fee) || 0;
     const parsedPromoDiscount = parseFloat(promo_discount) || 0;
     const parsedTotal = parseFloat(total);
 
-    if ([parsedNetRate, parsedYouSave, parsedPromoDiscount, parsedTotal].some(v => isNaN(v)))
-      return res.status(400).json({ message: 'net_rate, you_save, promo_discount, and total must be valid numbers' });
+    if ([parsedNetRate, parsedYouSave, parsedProcessingFee, parsedPromoDiscount, parsedTotal].some(v => isNaN(v)))
+      return res.status(400).json({ message: 'net_rate, you_save, processing_fee, promo_discount, and total must be valid numbers' });
 
     let finalCustomerType = customer_type || 'User';
     let customerDetails = { customer_name, address, mobile_number, email, district, state };
@@ -452,13 +464,13 @@ exports.createQuotation = async (req, res) => {
       { quotation_id, customer_type: finalCustomerType, total: parsedTotal, agent_name },
       customerDetails,
       products,
-      { net_rate: parsedNetRate, you_save: parsedYouSave, total: parsedTotal, promo_discount: parsedPromoDiscount }
+      { net_rate: parsedNetRate, you_save: parsedYouSave, processing_fee: parsedProcessingFee, total: parsedTotal, promo_discount: parsedPromoDiscount }
     );
 
     const result = await pool.query(`
       INSERT INTO public.quotations 
-      (customer_id, quotation_id, products, net_rate, you_save, total, promo_discount, address, mobile_number, customer_name, email, district, state, customer_type, status, created_at, pdf)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),$16)
+      (customer_id, quotation_id, products, net_rate, you_save, processing_fee, total, promo_discount, address, mobile_number, customer_name, email, district, state, customer_type, status, created_at, pdf)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW(),$17)
       RETURNING id, created_at, customer_type, pdf, quotation_id
     `, [
       customer_id || null,
@@ -466,6 +478,7 @@ exports.createQuotation = async (req, res) => {
       JSON.stringify(products),
       parsedNetRate,
       parsedYouSave,
+      parsedProcessingFee,
       parsedTotal,
       parsedPromoDiscount,
       customerDetails.address || null,
@@ -493,6 +506,7 @@ exports.createQuotation = async (req, res) => {
         customer_type: finalCustomerType,
         net_rate: parsedNetRate,
         you_save: parsedYouSave,
+        processing_fee: parsedProcessingFee,
         total: parsedTotal
       },
       customerDetails,
@@ -515,10 +529,11 @@ exports.createQuotation = async (req, res) => {
   }
 };
 
+// Update updateQuotation to handle processing fee
 exports.updateQuotation = async (req, res) => {
   try {
     const { quotation_id } = req.params;
-    const { products, net_rate, you_save, total, promo_discount, status } = req.body;
+    const { products, net_rate, you_save, processing_fee, total, promo_discount, status } = req.body;
 
     if (!quotation_id || !/^[a-zA-Z0-9-_]+$/.test(quotation_id)) return res.status(400).json({ message: 'Invalid or missing Quotation ID' });
     if (products && (!Array.isArray(products) || products.length === 0)) return res.status(400).json({ message: 'Products array is required and must not be empty' });
@@ -527,11 +542,12 @@ exports.updateQuotation = async (req, res) => {
 
     const parsedNetRate = net_rate !== undefined ? parseFloat(net_rate) : undefined;
     const parsedYouSave = you_save !== undefined ? parseFloat(you_save) : undefined;
+    const parsedProcessingFee = processing_fee !== undefined ? parseFloat(processing_fee) : undefined;
     const parsedPromoDiscount = promo_discount !== undefined ? parseFloat(promo_discount) : undefined;
     const parsedTotal = total !== undefined ? parseFloat(total) : undefined;
 
-    if ([parsedNetRate, parsedYouSave, parsedPromoDiscount, parsedTotal].some(v => v !== undefined && isNaN(v)))
-      return res.status(400).json({ message: 'net_rate, you_save, total, and promo_discount must be valid numbers' });
+    if ([parsedNetRate, parsedYouSave, parsedProcessingFee, parsedPromoDiscount, parsedTotal].some(v => v !== undefined && isNaN(v)))
+      return res.status(400).json({ message: 'net_rate, you_save, processing_fee, promo_discount, and total must be valid numbers' });
 
     const quotationCheck = await pool.query(
       'SELECT * FROM public.quotations WHERE quotation_id = $1',
@@ -587,6 +603,7 @@ exports.updateQuotation = async (req, res) => {
         {
           net_rate: parsedNetRate !== undefined ? parsedNetRate : parseFloat(quotation.net_rate || 0),
           you_save: parsedYouSave !== undefined ? parsedYouSave : parseFloat(quotation.you_save || 0),
+          processing_fee: parsedProcessingFee !== undefined ? parsedProcessingFee : parseFloat(quotation.processing_fee || 0),
           total: parsedTotal !== undefined ? parsedTotal : parseFloat(quotation.total || 0),
           promo_discount: parsedPromoDiscount !== undefined ? parsedPromoDiscount : parseFloat(quotation.promo_discount || 0)
         }
@@ -607,6 +624,7 @@ exports.updateQuotation = async (req, res) => {
           customer_type: quotation.customer_type,
           net_rate: parsedNetRate !== undefined ? parsedNetRate : parseFloat(quotation.net_rate || 0),
           you_save: parsedYouSave !== undefined ? parsedYouSave : parseFloat(quotation.you_save || 0),
+          processing_fee: parsedProcessingFee !== undefined ? parsedProcessingFee : parseFloat(quotation.processing_fee || 0),
           total: parsedTotal !== undefined ? parsedTotal : parseFloat(quotation.total || 0)
         },
         customerDetails,
@@ -631,6 +649,10 @@ exports.updateQuotation = async (req, res) => {
     if (parsedYouSave !== undefined) {
       updateFields.push(`you_save = $${paramIndex++}`);
       updateValues.push(parsedYouSave);
+    }
+    if (parsedProcessingFee !== undefined) {
+      updateFields.push(`processing_fee = $${paramIndex++}`);
+      updateValues.push(parsedProcessingFee);
     }
     if (parsedTotal !== undefined) {
       updateFields.push(`total = $${paramIndex++}`);
@@ -799,29 +821,28 @@ exports.getQuotation = async (req, res) => {
 exports.createBooking = async (req, res) => {
   try {
     const {
-      customer_id, order_id, quotation_id, products, net_rate, you_save, total, promo_discount,
+      customer_id, order_id, quotation_id, products, net_rate, you_save, processing_fee, total, promo_discount,
       customer_type, customer_name, address, mobile_number, email, district, state
     } = req.body;
 
-    // Validate required fields
     if (!order_id || !/^[a-zA-Z0-9-_]+$/.test(order_id)) return res.status(400).json({ message: 'Invalid or missing Order ID' });
     if (!Array.isArray(products) || products.length === 0) return res.status(400).json({ message: 'Products array is required and must not be empty' });
     if (!total || isNaN(parseFloat(total)) || parseFloat(total) <= 0) return res.status(400).json({ message: 'Total must be a positive number' });
 
     const parsedNetRate = parseFloat(net_rate) || 0;
     const parsedYouSave = parseFloat(you_save) || 0;
+    const parsedProcessingFee = parseFloat(processing_fee) || 0;
     const parsedPromoDiscount = parseFloat(promo_discount) || 0;
     const parsedTotal = parseFloat(total);
 
-    if ([parsedNetRate, parsedYouSave, parsedPromoDiscount, parsedTotal].some(v => isNaN(v)))
-      return res.status(400).json({ message: 'net_rate, you_save, promo_discount, and total must be valid numbers' });
+    if ([parsedNetRate, parsedYouSave, parsedProcessingFee, parsedPromoDiscount, parsedTotal].some(v => isNaN(v)))
+      return res.status(400).json({ message: 'net_rate, you_save, processing_fee, promo_discount, and total must be valid numbers' });
 
-    // Check quotation_id only if provided
     let quotation = null;
     if (quotation_id) {
       console.log(`Checking quotation with ID: ${quotation_id}`);
       const quotationCheck = await pool.query(
-        'SELECT customer_id, customer_type, products, net_rate, you_save, total, promo_discount FROM public.quotations WHERE quotation_id = $1',
+        'SELECT customer_id, customer_type, products, net_rate, you_save, processing_fee, total, promo_discount FROM public.quotations WHERE quotation_id = $1',
         [quotation_id]
       );
       if (quotationCheck.rows.length === 0) {
@@ -880,23 +901,24 @@ exports.createBooking = async (req, res) => {
       { order_id, customer_type: finalCustomerType, total: parsedTotal, agent_name },
       customerDetails,
       products,
-      { net_rate: parsedNetRate, you_save: parsedYouSave, total: parsedTotal, promo_discount: parsedPromoDiscount }
+      { net_rate: parsedNetRate, you_save: parsedYouSave, processing_fee: parsedProcessingFee, total: parsedTotal, promo_discount: parsedPromoDiscount }
     );
 
     await pool.query('BEGIN');
 
     const result = await pool.query(`
       INSERT INTO public.bookings 
-      (customer_id, order_id, quotation_id, products, net_rate, you_save, total, promo_discount, address, mobile_number, customer_name, email, district, state, customer_type, status, created_at, pdf)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,NOW(),$17)
+      (customer_id, order_id, quotation_id, products, net_rate, you_save, processing_fee, total, promo_discount, address, mobile_number, customer_name, email, district, state, customer_type, status, created_at, pdf)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,NOW(),$18)
       RETURNING id, created_at, customer_type, pdf, order_id
     `, [
       customer_id || null,
       order_id,
-      quotation_id || null, // Store null if quotation_id is not provided
+      quotation_id || null,
       JSON.stringify(products),
       parsedNetRate,
       parsedYouSave,
+      parsedProcessingFee,
       parsedTotal,
       parsedPromoDiscount,
       customerDetails.address || null,
@@ -910,7 +932,6 @@ exports.createBooking = async (req, res) => {
       pdfPath
     ]);
 
-    // Update quotation status only if quotation_id exists
     if (quotation_id) {
       await pool.query('UPDATE public.quotations SET status = $1, updated_at = NOW() WHERE quotation_id = $2', ['booked', quotation_id]);
     }
@@ -929,6 +950,7 @@ exports.createBooking = async (req, res) => {
         customer_type: finalCustomerType,
         net_rate: parsedNetRate,
         you_save: parsedYouSave,
+        processing_fee: parsedProcessingFee,
         total: parsedTotal
       },
       customerDetails,
