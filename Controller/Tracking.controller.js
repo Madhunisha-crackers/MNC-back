@@ -119,6 +119,8 @@ exports.getAllBookings = async (req, res) => {
       query += ` WHERE ` + conditions.join(' AND ');
     }
 
+    query += ` ORDER BY id DESC`; // Sort by id in descending order (latest to oldest)
+
     const result = await pool.query(query, params);
     res.status(200).json(result.rows);
   } catch (err) {
