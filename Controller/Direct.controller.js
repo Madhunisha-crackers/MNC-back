@@ -177,7 +177,7 @@ const generatePDF = (type, data, customerDetails, products, dbValues) => {
       }
       doc.fontSize(10).font('Helvetica')
         .text('Thank you for your business!', 50, tableRowY, { align: 'center' })
-        .text('For any queries, contact us at +91 63836 59214', 50, tableRowY + 15, { align: 'center' });
+        .text('For any queries, contact us at +91 94875 94689', 50, tableRowY + 15, { align: 'center' });
 
       doc.end();
       stream.on('finish', () => {
