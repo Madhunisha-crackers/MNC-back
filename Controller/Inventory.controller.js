@@ -140,7 +140,7 @@ exports.addProduct = async (req, res) => {
 };
 
 exports.updateProduct = async (req, res) => {
-  const client = await pool.connect(); // OPTIMIZATION: Use dedicated client
+  const client = await pool.connect();
   try {
     const { tableName, id } = req.params;
     const {
@@ -150,9 +150,9 @@ exports.updateProduct = async (req, res) => {
       per,
       discount,
       status,
-      images,
       description = '',
     } = req.body;
+    let images = req.body.images;
 
     if (!serial_number || !productname || !price || !per || !discount) {
       return res.status(400).json({ message: 'All required fields must be provided' });
@@ -162,14 +162,20 @@ exports.updateProduct = async (req, res) => {
       return res.status(400).json({ message: 'Valid per value (pieces, box, or pkt) is required' });
     }
 
-    if (images && Array.isArray(images)) {
-      for (const base64 of images) {
-        if (!validBase64Pattern.test(base64)) {
+    // Check if files are uploaded via multer
+    if (req.files && req.files.length > 0) {
+      images = req.files.map(file => file.path); // Use Cloudinary URLs from uploaded files
+    } else if (images && Array.isArray(images)) {
+      // Validate existing image URLs or Base64 strings
+      for (const image of images) {
+        if (typeof image === 'string' && !image.startsWith('http') && !validBase64Pattern.test(image)) {
           return res.status(400).json({
-            message: 'One or more files have invalid Base64 format. Only PNG, JPEG, GIF, MP4, WebM, or Ogg allowed.',
+            message: 'One or more image URLs are invalid. Only Cloudinary URLs or valid Base64 formats (PNG, JPEG, GIF, MP4, WebM, Ogg) allowed.',
           });
         }
       }
+    } else {
+      images = null; // No images provided
     }
 
     let query = `
@@ -181,7 +187,7 @@ exports.updateProduct = async (req, res) => {
       productname,
       parseFloat(price),
       per,
-      parseInt(discount, 10),
+      parseFloat(discount),
     ];
     let paramIndex = 6;
 
@@ -214,7 +220,7 @@ exports.updateProduct = async (req, res) => {
     console.error(err);
     res.status(500).json({ message: 'Failed to update product' });
   } finally {
-    client.release(); // OPTIMIZATION: Release connection
+    client.release();
   }
 };
 
@@ -336,6 +342,52 @@ exports.deleteProduct = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Failed to delete product' });
+  }
+};
+
+exports.deleteProductType = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { productType } = req.params;
+    const formattedProductType = productType.toLowerCase().replace(/\s+/g, '_');
+
+    // Check if product type exists
+    const typeCheck = await client.query(
+      'SELECT product_type FROM public.products WHERE product_type = $1',
+      [formattedProductType]
+    );
+
+    if (typeCheck.rows.length === 0) {
+      return res.status(404).json({ message: 'Product type not found' });
+    }
+
+    // Begin transaction
+    await client.query('BEGIN');
+
+    // Delete all products in the associated table
+    const tableName = formattedProductType;
+    await client.query(`DELETE FROM public.${tableName}`);
+
+    // Drop the associated table
+    await client.query(`DROP TABLE IF EXISTS public.${tableName}`);
+
+    // Remove product type from products table
+    await client.query('DELETE FROM public.products WHERE product_type = $1', [formattedProductType]);
+
+    // Update cache
+    productTypeCache.data = (productTypeCache.data || []).filter(type => type !== formattedProductType);
+    productTypeCache.timestamp = Date.now();
+
+    // Commit transaction
+    await client.query('COMMIT');
+
+    res.status(200).json({ message: 'Product type deleted successfully' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error(err);
+    res.status(500).json({ message: 'Failed to delete product type' });
+  } finally {
+    client.release();
   }
 };
 
