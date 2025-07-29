@@ -9,13 +9,13 @@
     "express": "^5.1.0",
     "form-data": "^4.0.3",
     "fs": "^0.0.1-security",
-    "multer": "^2.0.1",
+    "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10",
     "path": "^0.12.7",
     "pdfkit": "^0.17.1",
-    "pg": "^8.16.2",
+    "pg": "^8.16.3",
     "pg-format": "^1.0.4"
   },
   "scripts": {
