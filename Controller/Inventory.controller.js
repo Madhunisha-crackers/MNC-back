@@ -174,7 +174,7 @@ exports.updateProduct = async (req, res) => {
 
     let query = `
       UPDATE public.${tableName}
-      SET serial_number = $1, productname = publicación, price = $3, per = $4, discount = $5
+      SET serial_number = $1, productname = $2, price = $3, per = $4, discount = $5
     `;
     const values = [
       serial_number,
