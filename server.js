@@ -10,7 +10,7 @@ const upload = multer({
 const app = express();
 
 app.use(cors({
-  origin: ['https://www.madhunishacrackers.com', 'http://localhost:5173'],
+  origin: ['https://www.madhunishacrackers.com', 'http://localhost:5173', 'https://maruti-crackerss.vercel.app'],
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
