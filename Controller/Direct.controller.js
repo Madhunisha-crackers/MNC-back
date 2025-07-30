@@ -50,28 +50,28 @@ const generatePDF = (type, data, customerDetails, products, dbValues) => {
       const lineHeight = 15; // Standard line height for consistent spacing
 
       doc.fontSize(12).font('Helvetica')
-        .text(`${type === 'quotation' ? 'Quotation ID' : 'Order ID'}: ${data.quotation_id || data.order_id}`, 280, y, { align: 'left' });
+        .text(`${type === 'quotation' ? 'Quotation ID' : 'Order ID'}: ${data.quotation_id || data.order_id}`, 280, y, { align: 'right' });
       y += lineHeight;
-      doc.text(`Date: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 280, y, { align: 'left' });
+      doc.text(`Date: ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}`, 280, y, { align: 'right' });
       y += lineHeight;
-      doc.text(`Customer: ${customerDetails.customer_name || 'N/A'}`, 280, y, { align: 'left' });
+      doc.text(`Customer: ${customerDetails.customer_name || 'N/A'}`, 280, y, { align: 'right' });
       y += lineHeight;
-      doc.text(`Contact: ${customerDetails.mobile_number || 'N/A'}`, 280, y, { align: 'left' });
+      doc.text(`Contact: ${customerDetails.mobile_number || 'N/A'}`, 280, y, { align: 'right' });
       y += lineHeight;
-      doc.text(`Address: ${addressLine1}`, 280, y, { align: 'left' });
+      doc.text(`Address: ${addressLine1}`, 280, y, { align: 'right' });
       if (addressLine2) {
         y += lineHeight;
-        doc.text(addressLine2, 280, y, { align: 'left' });
+        doc.text(addressLine2, 280, y, { align: 'right' });
       }
       y += lineHeight;
-      doc.text(`District: ${customerDetails.district || 'N/A'}`, 280, y, { align: 'left' });
+      doc.text(`District: ${customerDetails.district || 'N/A'}`, 280, y, { align: 'right' });
       y += lineHeight;
-      doc.text(`State: ${customerDetails.state || 'N/A'}`, 280, y, { align: 'left' });
+      doc.text(`State: ${customerDetails.state || 'N/A'}`, 280, y, { align: 'right' });
       y += lineHeight;
-      doc.text(`Customer Type: ${customerType}`, 280, y, { align: 'left' });
+      doc.text(`Customer Type: ${customerType}`, 280, y, { align: 'right' });
       if (data.agent_name) {
         y += lineHeight;
-        doc.text(`Agent: ${data.agent_name}`, 280, y, { align: 'left' });
+        doc.text(`Agent: ${data.agent_name}`, 280, y, { align: 'right' });
       }
 
       // Table Setup
